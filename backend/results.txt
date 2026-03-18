@@ -1,0 +1,16 @@
+--- Root Endpoint ---
+Status: 200
+Body: {'message': 'API is running'}
+
+--- Normal Message ---
+Status: 200
+Body: {'input': 'Hey, are we still on for tomorrow?', 'prediction': 'not spam', 'spam_probability': 0.1518326094729709, 'threshold': 0.4}
+
+--- Spam Message ---
+Status: 200
+Body: {'input': "Congratulations! You've won a $1000 gift card. Click here to claim.", 'prediction': 'spam', 'spam_probability': 0.7386489425997177, 'threshold': 0.4}
+
+--- Empty Message ---
+Status: 422
+Body: {'detail': [{'type': 'string_too_short', 'loc': ['body', 'text'], 'msg': 'String should have at least 1 character', 'input': '', 'ctx': {'min_length': 1}}]}
+
