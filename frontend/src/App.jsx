@@ -1,22 +1,36 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ShieldCheck, ShieldAlert, Cpu } from 'lucide-react';
+
+const API_URL = "https://spammessagedetector.onrender.com";
 
 function App() {
   const [text, setText] = useState('');
   const [loading, setLoading] = useState(false);
+  const [loadingText, setLoadingText] = useState("Analyze Payload");
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
+
+  // Wake up the Render server silently when the page loads
+  useEffect(() => {
+    fetch(`${API_URL}/`).catch(() => {});
+  }, []);
 
   const analyzeSpam = async () => {
     if (!text.trim()) return;
     
     setLoading(true);
+    setLoadingText("Analyzing...");
     setResult(null);
     setError(null);
     
+    // If Render hasn't booted yet, update text after 3 seconds
+    const timeoutMsg = setTimeout(() => {
+      setLoadingText("Booting AI Engine (up to 50s)...");
+    }, 3000);
+    
     try {
-      const response = await fetch('http://127.0.0.1:8000/predict', {
+      const response = await fetch(`${API_URL}/predict`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -24,16 +38,20 @@ function App() {
         body: JSON.stringify({ text })
       });
       
+      clearTimeout(timeoutMsg);
+      
       if (!response.ok) {
-        throw new Error('API Error - Ensure the backend is running');
+        throw new Error('API Error - Failed to connect to neuro-engine');
       }
       
       const data = await response.json();
       setResult(data);
     } catch (err) {
+      clearTimeout(timeoutMsg);
       setError(err.message);
     } finally {
       setLoading(false);
+      setLoadingText("Analyze Payload");
     }
   };
 
@@ -50,7 +68,7 @@ function App() {
             animate={{ rotate: 360 }}
             transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
           >
-            <Cpu size={48} color="var(--neon-green)" />
+            <Cpu size={36} color="var(--neon-green)" />
           </motion.div>
         </div>
         
@@ -73,8 +91,9 @@ function App() {
           className="btn-primary" 
           onClick={analyzeSpam}
           disabled={loading || !text.trim()}
+          style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '10px' }}
         >
-          {loading ? <span className="loader"></span> : "Analyze Payload"}
+          {loading ? <><span className="loader"></span> <span style={{fontSize: '1rem'}}>{loadingText}</span></> : "Analyze Payload"}
         </button>
 
         <AnimatePresence>
@@ -87,9 +106,9 @@ function App() {
               style={{ overflow: 'hidden' }}
             >
               {result.prediction === 'spam' ? (
-                <ShieldAlert size={64} color="var(--danger)" />
+                <ShieldAlert size={48} color="var(--danger)" />
               ) : (
-                <ShieldCheck size={64} color="var(--neon-green)" />
+                <ShieldCheck size={48} color="var(--neon-green)" />
               )}
               
               <div className="result-status">
